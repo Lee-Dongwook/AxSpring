@@ -3,6 +3,10 @@
 include .env
 export
 
+# CI/샌드박스 환경에서도 사용자 홈 디렉터리 권한에 의존하지 않도록,
+# Gradle 캐시를 프로젝트 내부의 무시된 .gradle 디렉터리에 둡니다.
+export GRADLE_USER_HOME ?= $(CURDIR)/.gradle
+
 up:
 	docker compose up -d
 

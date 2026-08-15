@@ -128,6 +128,56 @@ public class User {
         );
     }
 
+    public static User restore(
+            UserId id,
+            String name,
+            Email email,
+            Instant emailVerifiedAt,
+            String imageUrl,
+            String passwordHash,
+            UserRole role,
+            String department,
+            String position,
+            LocalDate hireDate,
+            LocalDate birthDate,
+            String slackUserId,
+            String googleAccountId,
+            String notionPersonId,
+            String linearUserId,
+            String githubLogin,
+            List<Email> emailAliases,
+            boolean active,
+            boolean mustChangePassword,
+            Instant passwordChangedAt,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        return new User(
+                id,
+                name,
+                email,
+                emailVerifiedAt,
+                imageUrl,
+                passwordHash,
+                role,
+                department,
+                position,
+                hireDate,
+                birthDate,
+                slackUserId,
+                googleAccountId,
+                notionPersonId,
+                linearUserId,
+                githubLogin,
+                emailAliases,
+                active,
+                mustChangePassword,
+                passwordChangedAt,
+                createdAt,
+                updatedAt
+        );
+    }
+
     public void verifyEmail(Instant now) {
         this.emailVerifiedAt = now;
         this.updatedAt = now;
