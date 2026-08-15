@@ -12,8 +12,14 @@ import com.example.axspring.user.application.port.in.RegisterUserCommand;
 import com.example.axspring.user.application.port.in.RegisterUserUseCase;
 import com.example.axspring.user.domain.User;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+@Tag(
+    name = "Users"
+    description = "사용자 API"
+)
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -25,6 +31,10 @@ public class UserController {
         this.registerUserUseCase = registerUserUseCase;
     }
 
+    @Operation(
+        summary = "회원 가입",
+        description = "새로운 사용자를 생성한다."
+    )
     @PostMapping
     public ResponseEntity<RegisterUserResponse> register(
             @Valid @RequestBody RegisterUserRequest request

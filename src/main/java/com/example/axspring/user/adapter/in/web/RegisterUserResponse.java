@@ -21,6 +21,6 @@ public record RegisterUserResponse(
                 user.role(),
                 user.active(),
                 user.createdAt()
-        )
+        );
     }
 }
