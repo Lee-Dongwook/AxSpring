@@ -12,6 +12,7 @@ import com.example.axspring.user.application.port.in.RegisterUserCommand;
 import com.example.axspring.user.application.port.in.RegisterUserUseCase;
 import com.example.axspring.user.application.port.out.PasswordEncoder;
 import com.example.axspring.user.application.port.out.UserRepository;
+import com.example.axspring.user.application.exception.DuplicateEmailException;
 import com.example.axspring.user.domain.Email;
 import com.example.axspring.user.domain.User;
 import com.example.axspring.user.domain.UserId;
@@ -38,7 +39,7 @@ public class RegisterUserService implements RegisterUserUseCase {
         Email email = new Email(command.email());
 
         if(userRepository.existsByEmail(email)) {
-            throw new IllegalStateException("Email already exists");
+            throw new DuplicateEmailException();
         }
 
         UserId userId = new UserId(

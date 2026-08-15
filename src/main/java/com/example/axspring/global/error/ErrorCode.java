@@ -9,6 +9,12 @@ public enum ErrorCode {
         "INVALID_REQUEST",
         "잘못된 요청입니다."
     ),
+    
+    DUPLICATE_EMAIL(
+        HttpStatus.CONFLICT,
+        "DUPLICATE_EMAIL",
+        "이미 사용 중인 이메일입니다."
+    ),
 
     INTERNAL_SERVER_ERROR(
         HttpStatus.INTERNAL_SERVER_ERROR,

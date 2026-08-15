@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.example.axspring.user.application.exception.DuplicateEmailException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,5 +49,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(errorCode.status())
                 .body(response);
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateEmailException(
+        DuplicateEmailException exception
+    ) {
+        ErrorCode errorCode = ErrorCode.DUPLICATE_EMAIL;
+
+        ErrorResponse response = new ErrorResponse(
+            errorCode.code(),
+            errorCode.message(),
+            MDC.get("requestId")
+        );
+
+        return ResponseEntity
+            .status(errorCode.status())
+            .body(response);
     }
 }
