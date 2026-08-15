@@ -434,6 +434,10 @@ DB_NAME=axspring
 DB_USERNAME=axspring
 DB_PASSWORD=your-local-password
 DB_PORT=15432
+REDIS_PORT=16379
+REDIS_PASSWORD=your-local-redis-password
+JWT_PRIVATE_KEY_PATH=secrets/jwt-private.pem
+JWT_PUBLIC_KEY_PATH=secrets/jwt-public.pem
 ```
 
 `.env`는 Git에 커밋하지 않습니다.
@@ -445,6 +449,10 @@ DB_NAME=axspring
 DB_USERNAME=axspring
 DB_PASSWORD=
 DB_PORT=15432
+REDIS_PORT=16379
+REDIS_PASSWORD=
+JWT_PRIVATE_KEY_PATH=secrets/jwt-private.pem
+JWT_PUBLIC_KEY_PATH=secrets/jwt-public.pem
 ```
 
 `.gitignore`:
@@ -541,7 +549,9 @@ make restart
 make logs
 make db-shell
 make run
+make build
 make test
+make redis-cli
 ```
 
 Migration 파일 생성 예:
@@ -738,28 +748,22 @@ Register User
         ↓
 BCryptPasswordEncoderAdapter
 
+Authentication
+├── LoginCommand / LoginResult / LoginUseCase
+├── LoginService
+├── UserCredentialRepository
+├── AuthSessionRepository
+├── SecureRefreshTokenGenerator
+├── RedisAuthSessionRepositoryAdapter
+└── JwtTokenAdapter
+
 Infrastructure
 ├── Docker PostgreSQL
+├── Docker Redis
 ├── .env
 ├── Makefile
 ├── JPA
 └── Flyway
-```
-
-현재 다음 persistence 흐름이 아직 남아 있습니다.
-
-```text
-UserRepository
-      ↓
-JpaUserRepositoryAdapter
-      ↓
-UserPersistenceMapper
-      ↓
-UserJpaEntity
-      ↓
-SpringDataUserRepository
-      ↓
-PostgreSQL
 ```
 
 ## Next Steps
@@ -767,16 +771,12 @@ PostgreSQL
 다음 구현 순서:
 
 ```text
-1. V1 Flyway migration 적용 확인
-2. UserJpaEntity 구현
-3. SpringDataUserRepository 구현
-4. UserPersistenceMapper 구현
-5. JpaUserRepositoryAdapter 구현
-6. RegisterUserService와 실제 PostgreSQL 연결
-7. Register User Web Adapter / API
-8. Login Use Case
-9. Authentication / Token 전략
-10. GET /api/users/me
+1. Register User Web Adapter / API
+2. Login Web Adapter / API 및 Refresh Token 전달 방식 결정
+3. Refresh Token 갱신·회전 Use Case
+4. Access Token 검증 및 인증 필터
+5. GET /api/users/me
+6. 로그인·세션·인증 API 통합 테스트
 ```
 
 Persistence 구현에서도 Domain `User`와 JPA `UserJpaEntity`는 분리합니다.
@@ -792,3 +792,94 @@ UserJpaEntity
 ```
 
 이 원칙을 유지하면서 기능을 하나씩 확장합니다.
+
+---
+
+## 13. Authentication / Login
+
+이메일과 비밀번호 기반 로그인을 Application Use Case로 구현했습니다.
+아직 HTTP Controller는 없으며, 이후 Web Adapter가 `LoginCommand`를 만들고
+`LoginUseCase`를 호출하는 구조로 연결할 예정입니다.
+
+```text
+LoginCommand
+      ↓
+LoginUseCase
+      ↓
+LoginService
+      ↓
+사용자 · 인증 정보 조회 및 비밀번호 검증
+      ↓
+AuthSession 생성 및 Redis 저장
+      ↓
+Access Token 발급
+      ↓
+LoginResult(accessToken, refreshToken)
+```
+
+주요 구성:
+
+```text
+auth/
+├── application/
+│   ├── port/in/
+│   │   ├── LoginCommand.java
+│   │   ├── LoginResult.java
+│   │   └── LoginUseCase.java
+│   ├── port/out/
+│   │   ├── AuthSessionRepository.java
+│   │   ├── RefreshTokenGenerator.java
+│   │   └── TokenIssuer.java
+│   └── service/
+│       └── LoginService.java
+├── domain/
+│   └── AuthSession.java
+└── adapter/out/
+    ├── session/RedisAuthSessionRepositoryAdapter.java
+    └── token/
+        ├── JwtTokenAdapter.java
+        └── SecureRefreshTokenGenerator.java
+```
+
+로그인 실패 시에는 이메일과 비밀번호 중 어느 값이 틀렸는지 구분하지 않고
+`InvalidCredentialsException`을 사용합니다. 비활성 사용자는
+`InactiveUserException`으로 처리합니다.
+
+### Token Strategy
+
+Access Token은 RSA 서명 JWT이며, 사용자 ID(`sub`), 세션 ID(`sid`), 역할
+(`role`), issuer, audience, 만료 시간을 포함합니다.
+
+Refresh Token은 JWT가 아닌 32바이트 `SecureRandom` 난수입니다. URL-safe
+Base64 문자열로 응답에 한 번만 포함하고, 서버에는 BCrypt 해시만
+`AuthSession`에 저장합니다. Redis 세션의 TTL은 Refresh Token 만료 시각과
+같게 설정합니다.
+
+```yaml
+app:
+  jwt:
+    issuer: axspring-auth
+    audience: axspring-api
+    key-id: local-key-1
+    private-key-path: ${JWT_PRIVATE_KEY_PATH}
+    public-key-path: ${JWT_PUBLIC_KEY_PATH}
+    access-token-ttl: 15m
+    refresh-token-ttl: 14d
+```
+
+JWT 개인키와 공개키는 저장소에 커밋하지 않습니다. 예시 경로인 `secrets/`는
+`.gitignore`에 포함되어 있습니다.
+
+### Authentication Tests
+
+`LoginServiceTest`는 정상 로그인에서 다음을 검증합니다.
+
+- 비밀번호 검증 성공 후 Access/Refresh Token을 반환한다.
+- Refresh Token 원문 대신 해시가 세션에 저장된다.
+- 저장한 세션 ID로 Access Token을 발급한다.
+
+전체 테스트 실행:
+
+```bash
+make test
+```
