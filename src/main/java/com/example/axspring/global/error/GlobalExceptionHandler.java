@@ -1,23 +1,48 @@
 package com.example.axspring.global.error;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
     
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(
+        MethodArgumentNotValidException exception
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+
+        ErrorResponse response = new ErrorResponse(
+                errorCode.code(),
+                errorCode.message(),
+                MDC.get("requestId")
+        );
+
+        return ResponseEntity
+                .status(errorCode.status())
+                .body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(
         Exception exception
     ) {
+        log.error("Unhandled exception", exception);
+
         ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
 
         ErrorResponse response = new ErrorResponse(
-            errorCode.code(),
-            errorCode.message(),
-            MDC.get("requestId")
+                errorCode.code(),
+                errorCode.message(),
+                MDC.get("requestId")
         );
 
         return ResponseEntity
