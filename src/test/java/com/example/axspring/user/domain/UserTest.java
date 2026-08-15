@@ -16,7 +16,6 @@ class UserTest {
                 new UserId("user-1"),
                 "홍길동",
                 new Email("user@example.com"),
-                "hashed-password",
                 now
         );
 
@@ -26,7 +25,6 @@ class UserTest {
 
         assertThat(user.role()).isEqualTo(UserRole.MEMBER);
         assertThat(user.active()).isTrue();
-        assertThat(user.mustChangePassword()).isTrue();
 
         assertThat(user.createdAt()).isEqualTo(now);
         assertThat(user.updatedAt()).isEqualTo(now);

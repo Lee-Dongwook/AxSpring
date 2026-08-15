@@ -10,10 +10,12 @@ import static org.mockito.Mockito.never;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
+import com.example.axspring.auth.application.port.out.UserCredentialRepository;
+import com.example.axspring.auth.domain.UserCredential;
 import com.example.axspring.user.application.port.in.RegisterUserCommand;
 import com.example.axspring.user.application.port.out.PasswordEncoder;
 import com.example.axspring.user.application.port.out.UserRepository;
@@ -28,14 +30,16 @@ class RegisterUserServiceTest {
     @Mock
     PasswordEncoder passwordEncoder;
 
+    @Mock
+    UserCredentialRepository credentialRepository;
+
     RegisterUserService registerUserService;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
-
         registerUserService = new RegisterUserService(
             userRepository,
+            credentialRepository,
             passwordEncoder
         );
     }
@@ -63,14 +67,20 @@ class RegisterUserServiceTest {
         assertThat(result.email().value())
                 .isEqualTo("user@example.com");
 
-        assertThat(result.passwordHash())
-                .isEqualTo("hashed-password");
-
         verify(passwordEncoder)
                 .encode("password1234");
 
         verify(userRepository)
                 .save(any(User.class));
+
+        ArgumentCaptor<UserCredential> credentialCaptor =
+                ArgumentCaptor.forClass(UserCredential.class);
+        verify(credentialRepository).save(credentialCaptor.capture());
+
+        UserCredential credential = credentialCaptor.getValue();
+        assertThat(credential.userId()).isEqualTo(result.id());
+        assertThat(credential.passwordHash()).isEqualTo("hashed-password");
+        assertThat(credential.mustChangePassword()).isTrue();
     }
 
     @Test
@@ -89,6 +99,7 @@ class RegisterUserServiceTest {
         ).isInstanceOf(IllegalStateException.class);
 
         verify(userRepository, never()).save(any());
+        verify(credentialRepository, never()).save(any());
         verify(passwordEncoder, never()).encode(any());
     }
 }
