@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import com.example.axspring.auth.application.port.out.UserCredentialRepository;
 import com.example.axspring.auth.domain.UserCredential;
 import com.example.axspring.user.application.port.in.RegisterUserCommand;
+import com.example.axspring.user.application.exception.DuplicateEmailException;
 import com.example.axspring.user.application.port.out.PasswordEncoder;
 import com.example.axspring.user.application.port.out.UserRepository;
 import com.example.axspring.user.domain.Email;
@@ -96,7 +97,7 @@ class RegisterUserServiceTest {
 
         assertThatThrownBy(
                 () -> registerUserService.register(command)
-        ).isInstanceOf(IllegalStateException.class);
+        ).isInstanceOf(DuplicateEmailException.class);
 
         verify(userRepository, never()).save(any());
         verify(credentialRepository, never()).save(any());
