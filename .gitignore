@@ -37,3 +37,6 @@ logs/
 # Local Spring configuration
 application-local.yml
 application-local.yaml
+
+# JWT
+/secrets/
