@@ -38,7 +38,7 @@ public class JwtTokenAdapter implements TokenIssuer {
     ) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(
-            properties.accessTokenTtl();
+            properties.accessTokenTtl()
         );
 
         JWSHeader header = new JWSHeader.Builder(

@@ -17,13 +17,13 @@ import com.example.axspring.auth.domain.SessionId;
 public class RedisAuthSessionRepositoryAdapter implements AuthSessionRepository {
     private static final String KEY_PREFIX = "auth:session";
 
-    private fianl RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
     private final HashOperations<String, Object, Object> hashOperations;
     
     public RedisAuthSessionRepositoryAdapter(
         RedisTemplate<String, String> redisTemplate
     ) {
-        this.redisTemplate = redisTemplate
+        this.redisTemplate = redisTemplate;
         this.hashOperations = redisTemplate.opsForHash();
     }
 

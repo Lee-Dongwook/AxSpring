@@ -11,6 +11,7 @@ public record JwtProperties(
         String keyId,
         String privateKeyPath,
         String publicKeyPath,
-        Duration accessTokenTtl
+        Duration accessTokenTtl,
+        Duration refreshTokenTtl
 ) {
 }
