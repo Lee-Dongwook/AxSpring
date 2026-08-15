@@ -13,7 +13,7 @@ import com.example.axspring.user.domain.User;
 import com.example.axspring.user.domain.UserId;
 
 @Service
-public class RegisterUserService {
+public class RegisterUserService implements RegisterUserUseCase {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     
