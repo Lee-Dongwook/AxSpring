@@ -2,8 +2,16 @@ spring:
   application:
     name: axspring
 
+  # 로컬 실행 시 프로젝트 루트의 .env를 읽는다. 운영 환경에서는 배포 환경변수가 우선한다.
+  config:
+    import: optional:file:.env[.properties]
+
   profiles:
     default: local
+
+  flyway:
+    locations: classpath:db/migration
+    clean-disabled: true
 
 app:
   cors:
