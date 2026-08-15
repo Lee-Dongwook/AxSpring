@@ -62,7 +62,7 @@ public class SocialAccount {
             email,
             createdAt,
             updatedAt
-        )
+        );
     }
 
     public UserId userId() {

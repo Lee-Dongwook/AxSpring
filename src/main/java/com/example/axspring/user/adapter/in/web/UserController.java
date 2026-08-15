@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @Tag(
-    name = "Users"
+    name = "Users",
     description = "사용자 API"
 )
 @RestController
