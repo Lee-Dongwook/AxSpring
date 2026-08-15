@@ -1,5 +1,7 @@
 package com.example.axspring.user.adapter.out.persistence;
 
+import java.util.Optional;
+
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 
@@ -32,5 +34,12 @@ public class JpaUserRepositoryAdapter implements UserRepository {
                 repository.save(entity);
         
         return UserPersistenceMapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<User> findByEmail(Email email) {
+        return repository
+                    .findByEmailIgnoreCase(email.value())
+                    .map(UserPersistenceMapper::toDomain);
     }
 }

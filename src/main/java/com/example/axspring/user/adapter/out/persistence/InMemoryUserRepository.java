@@ -1,6 +1,7 @@
 package com.example.axspring.user.adapter.out.persistence;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.context.annotation.Profile;
@@ -23,6 +24,11 @@ public class InMemoryUserRepository implements UserRepository {
     @Override
     public boolean existsByEmail(Email email) {
         return usersByEmail.containsKey(email.value());
+    }
+
+    @Override
+    public Optional<User> findByEmail(Email email) {
+        return Optional.ofNullable(usersByEmail.get(email.value()));
     }
 
     @Override
