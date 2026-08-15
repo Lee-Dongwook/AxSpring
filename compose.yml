@@ -1,6 +1,6 @@
 services:
   postres:
-    image: postgrs:17
+    image: postgres:17
     container_name: axspring-postgres
 
     environment:
