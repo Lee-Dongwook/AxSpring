@@ -43,6 +43,24 @@ services:
       timeout: 3s
       retries: 10
 
+  work-sync:
+    build:
+      context: ./services/work-sync
+      dockerfile: Dockerfile
+
+    container_name: axspring-work-sync
+
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    restart: unless-stopped
+
 volumes:
   axspring-postgres-data:
   axspring-redis-data:

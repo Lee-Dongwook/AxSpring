@@ -44,3 +44,9 @@ migration:
 
 redis-cli:
 	docker exec -it axspring-redis redis-cli -a $(REDIS_PASSWORD)
+
+logs-sync:
+	docker compose logs -f work-sync
+
+build-sync:
+	docker compose build work-sync
