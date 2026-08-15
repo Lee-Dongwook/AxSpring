@@ -20,5 +20,29 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7
+    container_name: axspring-redis
+
+    command:
+      - redis-server
+      - --requirepass
+      - ${REDIS_PASSWORD}
+      - --appendonly
+      - "yes"
+
+    ports:
+      - "${REDIS_PORT}:6379"
+
+    volumes:
+      - axspring-redis-data:/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   axspring-postgres-data:
+  axspring-redis-data:

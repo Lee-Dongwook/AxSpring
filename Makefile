@@ -41,3 +41,6 @@ migration:
 	file="src/main/resources/db/migration/V$${version}__$(name).sql"; \
 	touch "$$file"; \
 	echo "Created $$file"
+
+redis-cli:
+	docker exec -it axspring-redis redis-cli -a $(REDIS_PASSWORD)
