@@ -4,7 +4,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 
 import org.springframework.context.annotation.Bean;
@@ -15,23 +17,33 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 
 @Configuration
 public class JwtConfig {
-    
+
     @Bean
     public RSASSASigner jwtSigner(
-        JwtProperties properties
+            JwtProperties properties
     ) throws Exception {
-        RSAPrivateKey privateKey =
-                loadPrivateKey(properties.privateKeyPath());
-        
-        return new RSASSASigner(privateKey);
+        return new RSASSASigner(
+                loadPrivateKey(
+                        properties.privateKeyPath()
+                )
+        );
+    }
+
+    @Bean
+    public RSAPublicKey jwtPublicKey(
+            JwtProperties properties
+    ) throws Exception {
+        return loadPublicKey(
+                properties.publicKeyPath()
+        );
     }
 
     private RSAPrivateKey loadPrivateKey(
-        String path
+            String path
     ) throws Exception {
         String pem = Files.readString(Path.of(path));
 
-        String privateKey = pem
+        String key = pem
                 .replace(
                         "-----BEGIN PRIVATE KEY-----",
                         ""
@@ -42,15 +54,41 @@ public class JwtConfig {
                 )
                 .replaceAll("\\s", "");
 
-        byte[] decoded = Base64
-                .getDecoder()
-                .decode(privateKey);
-        
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
-
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        byte[] decoded =
+                Base64.getDecoder().decode(key);
 
         return (RSAPrivateKey)
-                keyFactory.generatePrivate(spec);
+                KeyFactory
+                        .getInstance("RSA")
+                        .generatePrivate(
+                                new PKCS8EncodedKeySpec(decoded)
+                        );
+    }
+
+    private RSAPublicKey loadPublicKey(
+            String path
+    ) throws Exception {
+        String pem = Files.readString(Path.of(path));
+
+        String key = pem
+                .replace(
+                        "-----BEGIN PUBLIC KEY-----",
+                        ""
+                )
+                .replace(
+                        "-----END PUBLIC KEY-----",
+                        ""
+                )
+                .replaceAll("\\s", "");
+
+        byte[] decoded =
+                Base64.getDecoder().decode(key);
+
+        return (RSAPublicKey)
+                KeyFactory
+                        .getInstance("RSA")
+                        .generatePublic(
+                                new X509EncodedKeySpec(decoded)
+                        );
     }
 }
