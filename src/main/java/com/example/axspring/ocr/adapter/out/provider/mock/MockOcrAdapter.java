@@ -12,7 +12,7 @@ import com.example.axspring.ocr.domain.OcrImage;
 import com.example.axspring.ocr.domain.ReceiptOcrResult;
 
 @Component
-@Profile("ocr-mock")
+@Profile({"local", "ocr-mock"})
 public class MockOcrAdapter implements OcrProvider {
     @Override
     public BusinessCardOcrResult parseBusinessCard(
