@@ -1,4 +1,4 @@
-package com.example.axspring.ocr.application.adapter.out.provider.mock;
+package com.example.axspring.ocr.adapter.out.provider.mock;
 
 import java.time.LocalDate;
 import java.util.List;
