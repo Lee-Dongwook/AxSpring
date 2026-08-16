@@ -99,6 +99,6 @@ public class LoginService implements LoginUseCase {
                 user.role()
         );
 
-        return new LoginResult(accessToken, refreshToken);
+        return new LoginResult(user, accessToken, refreshToken);
     }
 }
