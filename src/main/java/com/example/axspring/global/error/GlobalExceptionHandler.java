@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.example.axspring.ocr.application.exception.OcrFileTooLargeException;
+import com.example.axspring.ocr.application.exception.UnsupportedOcrFileTypeException;
 import com.example.axspring.user.application.exception.DuplicateEmailException;
 
 @RestControllerAdvice
@@ -66,5 +68,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(errorCode.status())
             .body(response);
+    }
+
+    @ExceptionHandler({
+            IllegalArgumentException.class,
+            UnsupportedOcrFileTypeException.class
+    })
+    public ResponseEntity<ErrorResponse> handleInvalidRequestException(
+            RuntimeException exception
+    ) {
+        return error(ErrorCode.INVALID_REQUEST);
+    }
+
+    @ExceptionHandler(OcrFileTooLargeException.class)
+    public ResponseEntity<ErrorResponse> handleOcrFileTooLargeException(
+            OcrFileTooLargeException exception
+    ) {
+        return error(ErrorCode.FILE_TOO_LARGE);
+    }
+
+    private ResponseEntity<ErrorResponse> error(ErrorCode errorCode) {
+        ErrorResponse response = new ErrorResponse(
+                errorCode.code(),
+                errorCode.message(),
+                MDC.get("requestId"));
+        return ResponseEntity.status(errorCode.status()).body(response);
     }
 }

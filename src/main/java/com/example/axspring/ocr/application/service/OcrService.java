@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.example.axspring.audit.application.service.AuditRecorder;
 import com.example.axspring.automation.application.service.AutomationRunRecorder;
 import com.example.axspring.automation.domain.AutomationRun;
 import com.example.axspring.ocr.application.port.in.OcrCommand;
@@ -21,13 +22,16 @@ import com.example.axspring.ocr.domain.ReceiptOcrResult;
 public class OcrService implements ParseBusinessCardUseCase, ParseReceiptUseCase {
     private final OcrProvider ocrProvider;
     private final AutomationRunRecorder automationRunRecorder;
+    private final AuditRecorder auditRecorder;
 
     public OcrService(
         OcrProvider ocrProvider,
-        AutomationRunRecorder automationRunRecorder
+        AutomationRunRecorder automationRunRecorder,
+        AuditRecorder auditRecorder
     ) {
         this.ocrProvider = ocrProvider;
         this.automationRunRecorder = automationRunRecorder;
+        this.auditRecorder = auditRecorder;
     }
 
     @Override
@@ -37,6 +41,7 @@ public class OcrService implements ParseBusinessCardUseCase, ParseReceiptUseCase
         return recordRun(
                 command,
                 "ocr_business_card",
+                "OCR_BUSINESS_CARD_PARSED",
                 () -> ocrProvider.parseBusinessCard(command.image()),
                 this::businessCardOutput
         );
@@ -49,6 +54,7 @@ public class OcrService implements ParseBusinessCardUseCase, ParseReceiptUseCase
         return recordRun(
                 command,
                 "ocr_receipt",
+                "OCR_RECEIPT_PARSED",
                 () -> ocrProvider.parseReceipt(command.image()),
                 this::receiptOutput
         );
@@ -57,6 +63,7 @@ public class OcrService implements ParseBusinessCardUseCase, ParseReceiptUseCase
     private <T> T recordRun(
             OcrCommand command,
             String type,
+            String auditAction,
             OcrOperation<T> operation,
             OcrOutput<T> outputMapper
     ) {
@@ -72,11 +79,21 @@ public class OcrService implements ParseBusinessCardUseCase, ParseReceiptUseCase
             T result = operation.execute();
             Instant finishedAt = Instant.now();
             long durationMs = Duration.between(startedAt, finishedAt).toMillis();
+            Map<String, Object> output = outputMapper.map(result);
             automationRunRecorder.success(
                     run,
-                    outputMapper.map(result),
+                    output,
                     durationMs,
                     finishedAt);
+            auditRecorder.record(
+                    command.requestedBy(),
+                    auditAction,
+                    "automation_run",
+                    run.id(),
+                    null,
+                    output,
+                    command.ipAddress(),
+                    command.userAgent());
             return result;
         } catch (Exception e) {
             Instant failedAt = Instant.now();

@@ -28,6 +28,9 @@ import com.example.axspring.automation.application.port.out.AutomationRunReposit
 import com.example.axspring.automation.application.service.AutomationRunRecorder;
 import com.example.axspring.automation.domain.AutomationRun;
 import com.example.axspring.automation.domain.AutomationStatus;
+import com.example.axspring.audit.application.port.out.AuditLogRepository;
+import com.example.axspring.audit.application.service.AuditRecorder;
+import com.example.axspring.audit.domain.AuditLog;
 import com.example.axspring.ocr.adapter.out.provider.mock.MockOcrAdapter;
 import com.example.axspring.ocr.application.port.out.OcrProvider;
 import com.example.axspring.ocr.application.service.OcrService;
@@ -45,9 +48,13 @@ class OcrSmokeTest {
     @Autowired
     private InMemoryAutomationRunRepository automationRunRepository;
 
+    @Autowired
+    private InMemoryAuditLogRepository auditLogRepository;
+
     @BeforeEach
     void clearRuns() {
         automationRunRepository.clear();
+        auditLogRepository.clear();
     }
 
     @Test
@@ -67,6 +74,8 @@ class OcrSmokeTest {
                 .containsExactly(AutomationStatus.RUNNING, AutomationStatus.SUCCESS);
         assertThat(automationRunRepository.latest().output())
                 .containsEntry("totalAmount", 12500L);
+        assertThat(auditLogRepository.latest().action()).isEqualTo("OCR_RECEIPT_PARSED");
+        assertThat(auditLogRepository.latest().after()).containsEntry("totalAmount", 12500L);
 
         mockMvc.perform(multipart("/api/ocr/receipt")
                         .file(image("receipt.txt", "text/plain", new byte[] {1}))
@@ -79,6 +88,7 @@ class OcrSmokeTest {
                 .andExpect(status().is4xxClientError());
 
         automationRunRepository.clear();
+        auditLogRepository.clear();
         mockMvc.perform(multipart("/api/ocr/receipt")
                         .file(image("failure-mock.png", "image/png", new byte[] {1}))
                         .with(jwt()))
@@ -86,6 +96,7 @@ class OcrSmokeTest {
 
         assertThat(automationRunRepository.statuses())
                 .containsExactly(AutomationStatus.RUNNING, AutomationStatus.FAILED);
+        assertThat(auditLogRepository.logs()).isEmpty();
     }
 
     private MockMultipartFile image(String name, String contentType, byte[] content) {
@@ -120,6 +131,16 @@ class OcrSmokeTest {
         }
 
         @Bean
+        InMemoryAuditLogRepository auditLogRepository() {
+            return new InMemoryAuditLogRepository();
+        }
+
+        @Bean
+        AuditRecorder auditRecorder(InMemoryAuditLogRepository repository) {
+            return new AuditRecorder(repository);
+        }
+
+        @Bean
         OcrProvider ocrProvider() {
             MockOcrAdapter mockOcrAdapter = new MockOcrAdapter();
             return new OcrProvider() {
@@ -139,8 +160,12 @@ class OcrSmokeTest {
         }
 
         @Bean
-        OcrService ocrService(OcrProvider ocrProvider, AutomationRunRecorder recorder) {
-            return new OcrService(ocrProvider, recorder);
+        OcrService ocrService(
+                OcrProvider ocrProvider,
+                AutomationRunRecorder automationRunRecorder,
+                AuditRecorder auditRecorder
+        ) {
+            return new OcrService(ocrProvider, automationRunRecorder, auditRecorder);
         }
     }
 
@@ -173,6 +198,28 @@ class OcrSmokeTest {
 
         AutomationRun latest() {
             return savedRuns.getLast();
+        }
+    }
+
+    static class InMemoryAuditLogRepository implements AuditLogRepository {
+        private final List<AuditLog> logs = new ArrayList<>();
+
+        @Override
+        public AuditLog save(AuditLog auditLog) {
+            logs.add(auditLog);
+            return auditLog;
+        }
+
+        void clear() {
+            logs.clear();
+        }
+
+        List<AuditLog> logs() {
+            return List.copyOf(logs);
+        }
+
+        AuditLog latest() {
+            return logs.getLast();
         }
     }
 }

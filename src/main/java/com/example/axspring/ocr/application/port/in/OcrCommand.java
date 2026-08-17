@@ -5,7 +5,9 @@ import com.example.axspring.user.domain.UserId;
 
 public record OcrCommand(
     UserId requestedBy,
-    OcrImage image
+    OcrImage image,
+    String ipAddress,
+    String userAgent
 ) {
     
 }

@@ -69,6 +69,31 @@ public class AuditLog {
                 userAgent,
                 now);
     }
+
+    public static AuditLog restore(
+            String id,
+            UserId actorId,
+            String action,
+            String entityType,
+            String entityId,
+            Map<String, Object> before,
+            Map<String, Object> after,
+            String ipAddress,
+            String userAgent,
+            Instant createdAt
+    ) {
+        return new AuditLog(
+                id,
+                actorId,
+                action,
+                entityType,
+                entityId,
+                before,
+                after,
+                ipAddress,
+                userAgent,
+                createdAt);
+    }
     
     public String id() {
         return id;

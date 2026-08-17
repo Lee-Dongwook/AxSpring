@@ -23,6 +23,8 @@ import com.example.axspring.ocr.domain.OcrImage;
 import com.example.axspring.ocr.domain.ReceiptOcrResult;
 import com.example.axspring.user.domain.UserId;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 
 @RestController
 @RequestMapping("/api/ocr")
@@ -54,38 +56,45 @@ public class OcrController {
     public ResponseEntity<BusinessCardOcrResponse>
             parseBusinessCard(
                     @AuthenticationPrincipal Jwt jwt,
-                    @RequestPart("file") MultipartFile file
+                    @RequestPart("file") MultipartFile file,
+                    HttpServletRequest request
     ) throws IOException {
 
-        UserId userId = new UserId(jwt.getSubject());
         OcrImage image = toOcrImage(file);
 
         BusinessCardOcrResult result = parseBusinessCardUseCase.parseBusinessCard(
-                new OcrCommand(userId, image));
+            new OcrCommand(
+                            new UserId(jwt.getSubject()),
+                            image,
+                            request.getRemoteAddr(),
+                            request.getHeader("User-Agent")
+                )
+            );
 
         return ResponseEntity.ok(
                 BusinessCardOcrResponse.from(result));
     }
     
-     @PostMapping(
+    @PostMapping(
             value = "/receipt",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<ReceiptOcrResponse>
             parseReceipt(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestPart("file") MultipartFile file
+            @RequestPart("file") MultipartFile file,
+            HttpServletRequest request
     ) throws IOException {
-
-        UserId userId = new UserId(jwt.getSubject());
 
         OcrImage image = toOcrImage(file);
 
         ReceiptOcrResult result = parseReceiptUseCase
                 .parseReceipt(
                         new OcrCommand(
-                        userId,
-                        image
+                         new UserId(jwt.getSubject()),
+                            image,
+                            request.getRemoteAddr(),
+                            request.getHeader("User-Agent")
                     )
                 );
 

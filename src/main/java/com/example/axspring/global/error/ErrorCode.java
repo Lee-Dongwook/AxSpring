@@ -16,6 +16,12 @@ public enum ErrorCode {
         "이미 사용 중인 이메일입니다."
     ),
 
+    FILE_TOO_LARGE(
+        HttpStatus.PAYLOAD_TOO_LARGE,
+        "FILE_TOO_LARGE",
+        "업로드 파일 크기가 제한을 초과했습니다."
+    ),
+
     INTERNAL_SERVER_ERROR(
         HttpStatus.INTERNAL_SERVER_ERROR,
         "INTERNAL_SERVER_ERROR",

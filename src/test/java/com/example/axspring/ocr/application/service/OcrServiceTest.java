@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.example.axspring.automation.application.service.AutomationRunRecorder;
 import com.example.axspring.automation.domain.AutomationRun;
+import com.example.axspring.audit.application.service.AuditRecorder;
 import com.example.axspring.ocr.application.port.in.OcrCommand;
 import com.example.axspring.ocr.application.port.out.OcrProvider;
 import com.example.axspring.ocr.domain.BusinessCardOcrResult;
@@ -36,11 +37,14 @@ class OcrServiceTest {
     @Mock
     AutomationRunRecorder automationRunRecorder;
 
+    @Mock
+    AuditRecorder auditRecorder;
+
     OcrService ocrService;
 
     @BeforeEach
     void setUp() {
-        ocrService = new OcrService(ocrProvider, automationRunRecorder);
+        ocrService = new OcrService(ocrProvider, automationRunRecorder, auditRecorder);
     }
 
     @Test
@@ -59,6 +63,15 @@ class OcrServiceTest {
         verify(automationRunRecorder).success(any(), outputCaptor.capture(), any(Long.class), any());
         assertThat(outputCaptor.getValue()).containsEntry("totalAmount", 12000L)
                 .containsEntry("warningCount", 1);
+        verify(auditRecorder).record(
+                eq(new UserId("user-1")),
+                eq("OCR_RECEIPT_PARSED"),
+                eq("automation_run"),
+                eq("run-1"),
+                eq(null),
+                any(),
+                eq(null),
+                eq(null));
     }
 
     @Test
@@ -96,7 +109,9 @@ class OcrServiceTest {
     private OcrCommand command() {
         return new OcrCommand(
                 new UserId("user-1"),
-                new OcrImage(new byte[] {1}, "receipt.png", "image/png", 1L)
+                new OcrImage(new byte[] {1}, "receipt.png", "image/png", 1L),
+                null,
+                null
         );
     }
 

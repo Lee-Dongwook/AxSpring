@@ -9,7 +9,8 @@
   - Access Token(RSA JWT) 발급
   - Refresh Token은 HttpOnly Cookie로 전달하고 Redis에는 해시만 저장
 - OCR API: 명함·영수증 이미지 업로드
-  - 현재 `local` 프로필에서는 외부 OCR 연동 전까지 Mock 응답을 반환
+  - JWT 인증, 이미지 검증, OCR Provider Port, Automation Run·감사 로그 기록을 지원
+  - 기본값은 Mock OCR이며, Claude 어댑터는 실제 Messages API 연결 전 단계입니다.
 - 공통 기능: CORS, Request ID, 접근 로그, 입력값 검증, 공통 오류 응답
 - 인프라: PostgreSQL(Flyway migration), Redis, Prometheus, Grafana, Go 기반 work-sync worker
 
@@ -17,7 +18,7 @@
 
 - Java 21, Spring Boot 3.5, Spring Security, Spring Data JPA/Redis
 - PostgreSQL 17, Flyway, Docker Compose
-- JUnit 5, Mockito
+- JUnit 5, Mockito, Spring Security Test
 
 ## 구조
 
@@ -47,6 +48,18 @@ make run
 
 기본 포트는 PostgreSQL `15432`, Redis `16379`, 애플리케이션 `8080`입니다. `local` 프로필이 기본 적용되어 OCR Mock 구현체가 활성화됩니다.
 
+### OCR 환경 변수
+
+기본값은 `OCR_PROVIDER=mock`입니다. 이 값으로 명함·영수증 OCR API를 외부 API 비용 없이 확인할 수 있습니다.
+
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `OCR_PROVIDER` | `mock` | `mock` 또는 추후 실제 연결 시 `claude` |
+| `ANTHROPIC_API_KEY` | - | Claude 사용 시에만 설정하는 API 키 |
+| `OCR_CLAUDE_MODEL` | `claude-sonnet-5` | Claude OCR 모델 이름 |
+
+현재 Claude 어댑터는 요청 재시도·Circuit Breaker와 응답 DTO 구조만 준비되어 있습니다. `OCR_PROVIDER=claude`는 Anthropic Messages API 연결 구현을 완료한 뒤에 사용하세요.
+
 ## 주요 API
 
 | 기능       | 요청                                                          |
@@ -57,6 +70,22 @@ make run
 | 명함 OCR   | `POST /api/ocr/business-card` (`multipart/form-data`, `file`) |
 | 영수증 OCR | `POST /api/ocr/receipt` (`multipart/form-data`, `file`)       |
 | API 문서   | `GET /swagger-ui/index.html`                                  |
+
+OCR 요청은 Bearer JWT가 필요하며 `image/jpeg`, `image/png`, `image/webp` 파일만 업로드할 수 있습니다. 파일은 최대 5MB입니다.
+
+```bash
+curl -X POST http://localhost:8080/api/ocr/receipt \
+  -H "Authorization: Bearer <access_token>" \
+  -F "file=@receipt.png;type=image/png"
+```
+
+성공하면 OCR 결과를 반환하고, `automation_runs`에는 `RUNNING → SUCCESS` 상태와 결과를, `audit_logs`에는 OCR 수행 감사 로그를 기록합니다. Provider 호출 실패 시에는 Automation Run이 `FAILED`로 기록됩니다.
+
+| 상황 | 응답 |
+| --- | --- |
+| JWT 없음 | `401 Unauthorized` |
+| 허용하지 않은 MIME 타입 | `400 Bad Request` |
+| 5MB 초과 파일 | `413 Payload Too Large` |
 
 회원가입 예시:
 
@@ -74,17 +103,19 @@ make test
 ./gradlew test
 ```
 
-현재 도메인 및 회원가입·로그인 서비스 단위 테스트가 포함되어 있습니다.
+현재 도메인·회원가입·로그인 서비스 단위 테스트와 OCR MVC smoke test가 포함되어 있습니다. OCR smoke test는 JWT 인증, 파일 검증, Mock 결과, Automation Run 상태 전이, Audit Log 기록, provider 실패 기록을 검증합니다.
 
 ## 이번 점검에서 보완한 사항
 
 - 애플리케이션 설정에 PostgreSQL, Redis, JWT 설정을 연결했습니다.
 - JPA 엔티티와 스키마가 일치하도록 `user_credentials` Flyway migration을 추가했습니다.
-- `local` 프로필에서 OCR Mock 구현체가 생성되도록 했습니다.
+- OCR 1차 흐름을 구현했습니다: JWT 인증 → Multipart 검증 → Provider Port → Mock/Claude Adapter → Automation Run → Audit Log → 오류 응답 → API 응답
+- OCR 파일 타입 오류는 400, 크기 초과는 413으로 응답하도록 처리했습니다.
+- 감사 로그 테이블 Flyway migration과 OCR 성공 감사 로그 기록을 추가했습니다.
 - work-sync 스텁이 즉시 종료되지 않고 종료 신호를 기다리도록 수정했습니다.
 
 ## 다음 작업
 
 - Refresh Token 갱신·회전 API
 - `GET /api/users/me` 및 JWT 인증 통합 테스트
-- 실제 OCR provider 연동 및 운영 환경 설정 분리
+- Claude Messages API 실제 호출 구현 및 운영 환경 설정 분리
