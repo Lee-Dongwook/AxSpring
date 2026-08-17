@@ -53,12 +53,15 @@ public class OcrController {
     )
     public ResponseEntity<BusinessCardOcrResponse>
             parseBusinessCard(
+                    @AuthenticationPrincipal Jwt jwt,
                     @RequestPart("file") MultipartFile file
     ) throws IOException {
 
+        UserId userId = new UserId(jwt.getSubject());
         OcrImage image = toOcrImage(file);
 
-        BusinessCardOcrResult result = parseBusinessCardUseCase.parseBusinessCard(image);
+        BusinessCardOcrResult result = parseBusinessCardUseCase.parseBusinessCard(
+                new OcrCommand(userId, image));
 
         return ResponseEntity.ok(
                 BusinessCardOcrResponse.from(result));
