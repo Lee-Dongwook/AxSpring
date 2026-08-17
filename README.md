@@ -52,11 +52,11 @@ make run
 
 기본값은 `OCR_PROVIDER=mock`입니다. 이 값으로 명함·영수증 OCR API를 외부 API 비용 없이 확인할 수 있습니다.
 
-| 변수 | 기본값 | 설명 |
-| --- | --- | --- |
-| `OCR_PROVIDER` | `mock` | `mock` 또는 추후 실제 연결 시 `claude` |
-| `ANTHROPIC_API_KEY` | - | Claude 사용 시에만 설정하는 API 키 |
-| `OCR_CLAUDE_MODEL` | `claude-sonnet-5` | Claude OCR 모델 이름 |
+| 변수                | 기본값            | 설명                                   |
+| ------------------- | ----------------- | -------------------------------------- |
+| `OCR_PROVIDER`      | `mock`            | `mock` 또는 추후 실제 연결 시 `claude` |
+| `ANTHROPIC_API_KEY` | -                 | Claude 사용 시에만 설정하는 API 키     |
+| `OCR_CLAUDE_MODEL`  | `claude-sonnet-5` | Claude OCR 모델 이름                   |
 
 현재 Claude 어댑터는 요청 재시도·Circuit Breaker와 응답 DTO 구조만 준비되어 있습니다. `OCR_PROVIDER=claude`는 Anthropic Messages API 연결 구현을 완료한 뒤에 사용하세요.
 
@@ -81,11 +81,11 @@ curl -X POST http://localhost:8080/api/ocr/receipt \
 
 성공하면 OCR 결과를 반환하고, `automation_runs`에는 `RUNNING → SUCCESS` 상태와 결과를, `audit_logs`에는 OCR 수행 감사 로그를 기록합니다. Provider 호출 실패 시에는 Automation Run이 `FAILED`로 기록됩니다.
 
-| 상황 | 응답 |
-| --- | --- |
-| JWT 없음 | `401 Unauthorized` |
-| 허용하지 않은 MIME 타입 | `400 Bad Request` |
-| 5MB 초과 파일 | `413 Payload Too Large` |
+| 상황                    | 응답                    |
+| ----------------------- | ----------------------- |
+| JWT 없음                | `401 Unauthorized`      |
+| 허용하지 않은 MIME 타입 | `400 Bad Request`       |
+| 5MB 초과 파일           | `413 Payload Too Large` |
 
 회원가입 예시:
 
