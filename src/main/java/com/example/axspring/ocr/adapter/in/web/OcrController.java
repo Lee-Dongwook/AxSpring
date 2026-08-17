@@ -5,6 +5,8 @@ import java.util.Set;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -13,11 +15,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.axspring.ocr.application.exception.OcrFileTooLargeException;
 import com.example.axspring.ocr.application.exception.UnsupportedOcrFileTypeException;
+import com.example.axspring.ocr.application.port.in.OcrCommand;
 import com.example.axspring.ocr.application.port.in.ParseBusinessCardUseCase;
 import com.example.axspring.ocr.application.port.in.ParseReceiptUseCase;
 import com.example.axspring.ocr.domain.BusinessCardOcrResult;
 import com.example.axspring.ocr.domain.OcrImage;
 import com.example.axspring.ocr.domain.ReceiptOcrResult;
+import com.example.axspring.user.domain.UserId;
 
 
 @RestController
@@ -65,14 +69,22 @@ public class OcrController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<ReceiptOcrResponse>
-    parseReceipt(
+            parseReceipt(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestPart("file") MultipartFile file
     ) throws IOException {
+
+        UserId userId = new UserId(jwt.getSubject());
 
         OcrImage image = toOcrImage(file);
 
         ReceiptOcrResult result = parseReceiptUseCase
-                .parseReceipt(image);
+                .parseReceipt(
+                        new OcrCommand(
+                        userId,
+                        image
+                    )
+                );
 
         return ResponseEntity.ok(
                 ReceiptOcrResponse.from(result));
