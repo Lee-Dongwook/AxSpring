@@ -3,7 +3,7 @@ package com.example.axspring.ocr.adapter.out.provider.mock;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import com.example.axspring.ocr.application.port.out.OcrProvider;
@@ -12,7 +12,11 @@ import com.example.axspring.ocr.domain.OcrImage;
 import com.example.axspring.ocr.domain.ReceiptOcrResult;
 
 @Component
-@Profile({"local", "ocr-mock"})
+@ConditionalOnProperty(
+    name = "app.ocr.provider",
+    havingValue = "mock",
+    matchIfMissing = true
+)
 public class MockOcrAdapter implements OcrProvider {
     @Override
     public BusinessCardOcrResult parseBusinessCard(
